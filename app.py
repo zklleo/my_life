@@ -596,114 +596,7 @@ with tab2:
     st.title("📊 Summary Report")
 
     # ----------------------------------------------------------
-    # A. 今日概览 (Today's Snapshot)
-    # ----------------------------------------------------------
-    with st.container(border=True):
-        st.subheader("🎯 Today's Snapshot")
-
-        today_log = get_today_log()
-
-        if today_log:
-            # 计算总时长
-            info_time = (today_log.get("newsletter_time") or 0) + (today_log.get("video_time") or 0) + (today_log.get("wechat_time") or 0)
-            vocab_count = today_log.get("gre_vocab_count") or 0
-
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Info Diet", f"{info_time} min")
-            with col2:
-                st.metric("GRE Vocab", vocab_count)
-            with col3:
-                verbal = today_log.get("gre_verbal_count") or 0
-                reading = today_log.get("gre_reading_count") or 0
-                st.metric("GRE Practice", f"V:{verbal} R:{reading}")
-            with col4:
-                lc_easy = today_log.get("lc_easy_count") or 0
-                lc_med = today_log.get("lc_medium_count") or 0
-                lc_hard = today_log.get("lc_hard_count") or 0
-                lc_total = lc_easy + lc_med + lc_hard
-                st.metric("LeetCode", lc_total, help=f"E:{lc_easy} M:{lc_med} H:{lc_hard}")
-        else:
-            st.info("No data logged today yet.")
-
-        # 今日 Research 活动
-        today_research = get_today_research_logs()
-        if today_research:
-            st.markdown("**Research Today**")
-            for log in today_research:
-                proj_name = log.get("research_projects", {}).get("title", "Unknown") if log.get("research_projects") else "Unknown"
-                content = (log.get("content") or "")[:80]
-                st.markdown(f"- **{proj_name}**: {content}...")
-
-        # 今日 Idea 活动
-        today_ideas = get_today_idea_updates()
-        if today_ideas:
-            st.markdown("**Ideas Today**")
-            for update in today_ideas:
-                idea_name = update.get("ideas", {}).get("title", "Unknown") if update.get("ideas") else "Unknown"
-                content = (update.get("content") or "")[:80]
-                st.markdown(f"- **{idea_name}**: {content}...")
-
-    # ----------------------------------------------------------
-    # B. 过去 3 天回顾 (Past 3 Days Trend)
-    # ----------------------------------------------------------
-    with st.container(border=True):
-        st.subheader("📈 Past 3 Days")
-
-        start_date = (today - timedelta(days=3)).isoformat()
-        logs = get_logs_since(start_date)
-
-        if logs:
-            # 转换为 DataFrame
-            df = pd.DataFrame(logs)
-
-            # 时间分配图
-            st.markdown("**Time Allocation**")
-            if all(col in df.columns for col in ["date", "newsletter_time", "video_time", "wechat_time"]):
-                chart_df = df[["date", "newsletter_time", "video_time", "wechat_time"]].copy()
-                chart_df = chart_df.fillna(0)
-                chart_df = chart_df.set_index("date")
-                chart_df.columns = ["Newsletter", "Video", "WeChat"]
-                st.bar_chart(chart_df)
-            else:
-                st.caption("Insufficient data for chart.")
-
-            # GRE 进度
-            st.markdown("**GRE Vocabulary Trend**")
-            if "gre_vocab_count" in df.columns:
-                vocab_df = df[["date", "gre_vocab_count"]].copy()
-                vocab_df = vocab_df.fillna(0)
-                vocab_df = vocab_df.set_index("date")
-                vocab_df.columns = ["Words"]
-                st.line_chart(vocab_df)
-
-            # LeetCode 进度
-            st.markdown("**LeetCode Trend**")
-            if all(col in df.columns for col in ["lc_easy_count", "lc_medium_count", "lc_hard_count"]):
-                lc_df = df[["date", "lc_easy_count", "lc_medium_count", "lc_hard_count"]].copy()
-                lc_df = lc_df.fillna(0)
-                lc_df = lc_df.set_index("date")
-                lc_df.columns = ["Easy", "Medium", "Hard"]
-                st.bar_chart(lc_df)
-            else:
-                st.caption("No LeetCode data yet.")
-        else:
-            st.info("No data in the past 3 days.")
-
-        # Research 轨迹
-        st.markdown("**Research Timeline**")
-        research_logs = get_research_logs_since(start_date)
-        if research_logs:
-            for log in research_logs:
-                proj_name = log.get("research_projects", {}).get("title", "Unknown") if log.get("research_projects") else "Unknown"
-                st.markdown(f"**{log['date']}** - {proj_name}")
-                st.markdown(f"> {log.get('content', '')[:150]}...")
-                st.markdown("---")
-        else:
-            st.caption("No research logs in the past 3 days.")
-
-    # ----------------------------------------------------------
-    # C. Information Diet Trends
+    # A. Information Diet Trends
     # ----------------------------------------------------------
     with st.container(border=True):
         st.markdown("### 📉 Information Diet Trends")
@@ -798,7 +691,7 @@ with tab2:
             st.info("No data available for Information Diet trends.")
 
     # ----------------------------------------------------------
-    # D. 项目贡献热力图 (Past 14 Days)
+    # B. 项目贡献热力图 (Past 14 Days)
     # ----------------------------------------------------------
     with st.container(border=True):
         st.markdown("### 📅 Project Activity (Past 14 Days)")
@@ -867,7 +760,7 @@ with tab2:
             st.caption("No project data available.")
 
     # ----------------------------------------------------------
-    # E. GRE Progress
+    # C. GRE Progress
     # ----------------------------------------------------------
     with st.container(border=True):
         st.markdown("### 📚 GRE Progress")
@@ -958,7 +851,7 @@ with tab2:
             st.info("No GRE data available.")
 
     # ----------------------------------------------------------
-    # F. LeetCode Progress
+    # D. LeetCode Progress
     # ----------------------------------------------------------
     with st.container(border=True):
         st.markdown("### 💻 LeetCode Progress")
@@ -1036,7 +929,7 @@ with tab2:
             st.info("No LeetCode data available.")
 
     # ----------------------------------------------------------
-    # G. Idea Activity (Past 14 Days)
+    # E. Idea Activity (Past 14 Days)
     # ----------------------------------------------------------
     with st.container(border=True):
         st.markdown("### 💡 Idea Activity (Past 14 Days)")
