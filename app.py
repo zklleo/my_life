@@ -596,6 +596,59 @@ with tab2:
     st.title("📊 Summary Report")
 
     # ----------------------------------------------------------
+    # Today's Snapshot
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 🎯 Today's Snapshot")
+
+        today_log = get_today_log()
+
+        # Info Diet
+        if today_log:
+            info_time = (today_log.get("newsletter_time") or 0) + (today_log.get("video_time") or 0) + (today_log.get("wechat_time") or 0)
+        else:
+            info_time = 0
+        st.markdown(f"**Info Diet:** {info_time} min")
+
+        # Projects
+        today_research = get_today_research_logs()
+        if today_research:
+            project_names = [log.get("research_projects", {}).get("title", "Unknown") if log.get("research_projects") else "Unknown" for log in today_research]
+            st.markdown("**Projects:**")
+            for name in project_names:
+                st.markdown(f"- {name}")
+        else:
+            st.markdown("**Projects:** None")
+
+        # GRE
+        if today_log:
+            vocab = today_log.get("gre_vocab_count") or 0
+            verbal = today_log.get("gre_verbal_count") or 0
+            reading = today_log.get("gre_reading_count") or 0
+        else:
+            vocab, verbal, reading = 0, 0, 0
+        st.markdown(f"**GRE:** Vocab {vocab} / Verbal {verbal} / Reading {reading}")
+
+        # LeetCode
+        if today_log:
+            lc_easy = today_log.get("lc_easy_count") or 0
+            lc_med = today_log.get("lc_medium_count") or 0
+            lc_hard = today_log.get("lc_hard_count") or 0
+        else:
+            lc_easy, lc_med, lc_hard = 0, 0, 0
+        st.markdown(f"**LeetCode:** Easy {lc_easy} / Med {lc_med} / Hard {lc_hard}")
+
+        # Ideas
+        today_ideas = get_today_idea_updates()
+        if today_ideas:
+            idea_names = list(set([update.get("ideas", {}).get("title", "Unknown") if update.get("ideas") else "Unknown" for update in today_ideas]))
+            st.markdown("**Ideas:**")
+            for name in idea_names:
+                st.markdown(f"- {name}")
+        else:
+            st.markdown("**Ideas:** None")
+
+    # ----------------------------------------------------------
     # A. Information Diet Trends
     # ----------------------------------------------------------
     with st.container(border=True):
