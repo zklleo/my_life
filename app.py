@@ -708,9 +708,12 @@ with tab2:
     with st.container(border=True):
         st.markdown("### 📉 Information Diet Trends")
 
-        all_logs = get_all_logs()
+        try:
+            all_logs = get_all_logs()
+        except Exception:
+            all_logs = []
 
-        if all_logs:
+        if all_logs and len(all_logs) > 0:
             # 数据准备
             df = pd.DataFrame(all_logs)
             df["date"] = pd.to_datetime(df["date"])
