@@ -29,6 +29,12 @@ create table if not exists daily_logs (
   gre_verbal_count int default 0,
   gre_reading_count int default 0,
 
+  -- LeetCode
+  lc_easy_count int default 0,
+  lc_medium_count int default 0,
+  lc_hard_count int default 0,
+  lc_notes text,
+
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
@@ -81,3 +87,11 @@ create table if not exists idea_updates (
 create index if not exists idx_research_logs_project on research_logs(project_id);
 create index if not exists idx_research_logs_date on research_logs(date);
 create index if not exists idx_idea_updates_idea on idea_updates(idea_id);
+
+-- ============================================================
+-- 字段迁移 (给已存在的表添加新字段)
+-- ============================================================
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lc_easy_count int default 0;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lc_medium_count int default 0;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lc_hard_count int default 0;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS lc_notes text;

@@ -59,8 +59,17 @@ def auto_save():
         "gre_vocab_count": st.session_state.get("gre_vocab_count", 0),
         "gre_verbal_count": st.session_state.get("gre_verbal_count", 0),
         "gre_reading_count": st.session_state.get("gre_reading_count", 0),
+        "lc_easy_count": st.session_state.get("lc_easy_count", 0),
+        "lc_medium_count": st.session_state.get("lc_medium_count", 0),
+        "lc_hard_count": st.session_state.get("lc_hard_count", 0),
+        "lc_notes": st.session_state.get("lc_notes", ""),
     }
     supabase.table("daily_logs").upsert(data).execute()
+
+def save_leetcode_progress():
+    """LeetCode 即时保存回调"""
+    auto_save()
+    st.toast("Saved!")
 
 # --- Research Projects ---
 def get_active_projects():
@@ -168,6 +177,10 @@ if "initialized" not in st.session_state:
         st.session_state.gre_vocab_count = log.get("gre_vocab_count", 0)
         st.session_state.gre_verbal_count = log.get("gre_verbal_count", 0)
         st.session_state.gre_reading_count = log.get("gre_reading_count", 0)
+        st.session_state.lc_easy_count = log.get("lc_easy_count", 0)
+        st.session_state.lc_medium_count = log.get("lc_medium_count", 0)
+        st.session_state.lc_hard_count = log.get("lc_hard_count", 0)
+        st.session_state.lc_notes = log.get("lc_notes") or ""
     else:
         st.session_state.newsletter_done = False
         st.session_state.newsletter_time = 0
@@ -180,6 +193,10 @@ if "initialized" not in st.session_state:
         st.session_state.gre_vocab_count = 0
         st.session_state.gre_verbal_count = 0
         st.session_state.gre_reading_count = 0
+        st.session_state.lc_easy_count = 0
+        st.session_state.lc_medium_count = 0
+        st.session_state.lc_hard_count = 0
+        st.session_state.lc_notes = ""
 
     st.session_state.research_mode = False
     st.session_state.research_time = 0
@@ -421,7 +438,53 @@ if page == "📝 Daily Log":
                 st.rerun()
 
     # ----------------------------------------------------------
-    # 模块 D: Idea Incubator
+    # 模块 D: LeetCode Grind
+    # ----------------------------------------------------------
+    lc_total = st.session_state.lc_easy_count + st.session_state.lc_medium_count + st.session_state.lc_hard_count
+    with st.container(border=True):
+        st.markdown(f"### LeetCode (Total: {lc_total})")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input(
+                "Easy",
+                min_value=0,
+                step=1,
+                value=st.session_state.lc_easy_count,
+                key="lc_easy_count",
+                on_change=save_leetcode_progress
+            )
+        with col2:
+            st.number_input(
+                "Med",
+                min_value=0,
+                step=1,
+                value=st.session_state.lc_medium_count,
+                key="lc_medium_count",
+                on_change=save_leetcode_progress
+            )
+        with col3:
+            st.number_input(
+                "Hard",
+                min_value=0,
+                step=1,
+                value=st.session_state.lc_hard_count,
+                key="lc_hard_count",
+                on_change=save_leetcode_progress
+            )
+
+        with st.expander("Notes"):
+            st.text_area(
+                "Notes",
+                value=st.session_state.lc_notes,
+                key="lc_notes",
+                placeholder="Today's problem notes...",
+                label_visibility="collapsed",
+                on_change=save_leetcode_progress
+            )
+
+    # ----------------------------------------------------------
+    # 模块 E: Idea Incubator
     # ----------------------------------------------------------
     with st.container(border=True):
         st.subheader("💡 Idea Incubator")
