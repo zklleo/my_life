@@ -239,11 +239,9 @@ if "idea_mode" not in st.session_state:
     st.session_state.idea_mode = False
 
 # ============================================================
-# Sidebar Navigation
+# Tab Navigation
 # ============================================================
-with st.sidebar:
-    st.title("🧠 Life OS")
-    page = st.radio("Navigation", ["📝 Daily Log", "📊 Summary"], label_visibility="collapsed")
+tab1, tab2 = st.tabs(["📝 Daily Log", "📊 Summary"])
 
 # ============================================================
 # 自定义 CSS
@@ -273,7 +271,7 @@ st.markdown("""
 # ============================================================
 # 📝 Daily Log 页面
 # ============================================================
-if page == "📝 Daily Log":
+with tab1:
     st.title("📝 Daily Log")
     st.caption(f"Today: {today_str}")
 
@@ -594,7 +592,7 @@ if page == "📝 Daily Log":
 # ============================================================
 # 📊 Summary 页面
 # ============================================================
-elif page == "📊 Summary":
+with tab2:
     st.title("📊 Summary Report")
 
     # ----------------------------------------------------------
