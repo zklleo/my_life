@@ -720,36 +720,50 @@ elif page == "📊 Summary":
             df["video_time"] = df["video_time"].fillna(0)
             df["wechat_time"] = df["wechat_time"].fillna(0)
 
-            # 转换为长格式
-            df_melted = df.melt(
-                id_vars=["date"],
-                value_vars=["newsletter_time", "video_time", "wechat_time"],
-                var_name="Category",
-                value_name="Minutes"
+            # 颜色映射
+            color_scale = alt.Scale(
+                domain=["Newsletter", "Video", "WeChat"],
+                range=["#4CAF50", "#2196F3", "#FF9800"]  # 绿、蓝、橙
             )
-            # 重命名类别
-            category_map = {
-                "newsletter_time": "Newsletter",
-                "video_time": "Video",
-                "wechat_time": "WeChat"
-            }
-            df_melted["Category"] = df_melted["Category"].map(category_map)
 
-            # 图表一：每日趋势折线图
-            st.markdown("**Daily Trend**")
-            daily_chart = alt.Chart(df_melted).mark_line(point=True).encode(
-                x=alt.X("date:T", title="Date"),
-                y=alt.Y("Minutes:Q", title="Minutes"),
-                color=alt.Color("Category:N", legend=alt.Legend(title="Category")),
-                tooltip=["date:T", "Category:N", "Minutes:Q"]
-            ).properties(
-                height=300
-            ).interactive(bind_x=True)
+            # 图表一：当前周每日趋势折线图
+            st.markdown("**This Week (Daily)**")
 
-            st.altair_chart(daily_chart, use_container_width=True)
+            # 计算本周一的日期
+            today_dt = pd.Timestamp(today)
+            monday = today_dt - timedelta(days=today_dt.weekday())
+            df_week = df[df["date"] >= monday].copy()
 
-            # 图表二：周总量堆叠柱状图
-            st.markdown("**Weekly Total**")
+            if not df_week.empty:
+                # 转换为长格式
+                df_week_melted = df_week.melt(
+                    id_vars=["date"],
+                    value_vars=["newsletter_time", "video_time", "wechat_time"],
+                    var_name="Category",
+                    value_name="Minutes"
+                )
+                category_map = {
+                    "newsletter_time": "Newsletter",
+                    "video_time": "Video",
+                    "wechat_time": "WeChat"
+                }
+                df_week_melted["Category"] = df_week_melted["Category"].map(category_map)
+
+                daily_chart = alt.Chart(df_week_melted).mark_line(point=True, strokeWidth=2).encode(
+                    x=alt.X("date:T", title="Date"),
+                    y=alt.Y("Minutes:Q", title="Minutes"),
+                    color=alt.Color("Category:N", scale=color_scale, legend=alt.Legend(title="Category")),
+                    tooltip=["date:T", "Category:N", "Minutes:Q"]
+                ).properties(
+                    height=300
+                )
+
+                st.altair_chart(daily_chart, use_container_width=True)
+            else:
+                st.caption("No data for this week yet.")
+
+            # 图表二：所有周总量堆叠柱状图
+            st.markdown("**All Weeks (Total Hours)**")
 
             # 按周聚合
             df_weekly = df.set_index("date").resample("W-MON")[
@@ -772,7 +786,7 @@ elif page == "📊 Summary":
             weekly_chart = alt.Chart(df_weekly_melted).mark_bar().encode(
                 x=alt.X("date:T", title="Week"),
                 y=alt.Y("Hours:Q", title="Hours", stack="zero"),
-                color=alt.Color("Category:N", legend=alt.Legend(title="Category")),
+                color=alt.Color("Category:N", scale=color_scale, legend=alt.Legend(title="Category")),
                 tooltip=["date:T", "Category:N", alt.Tooltip("Hours:Q", format=".1f")]
             ).properties(
                 height=300
