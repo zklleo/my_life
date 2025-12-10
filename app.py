@@ -611,7 +611,7 @@ elif page == "📊 Summary":
             info_time = (today_log.get("newsletter_time") or 0) + (today_log.get("video_time") or 0) + (today_log.get("wechat_time") or 0)
             vocab_count = today_log.get("gre_vocab_count") or 0
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Info Diet", f"{info_time} min")
             with col2:
@@ -620,6 +620,12 @@ elif page == "📊 Summary":
                 verbal = today_log.get("gre_verbal_count") or 0
                 reading = today_log.get("gre_reading_count") or 0
                 st.metric("GRE Practice", f"V:{verbal} R:{reading}")
+            with col4:
+                lc_easy = today_log.get("lc_easy_count") or 0
+                lc_med = today_log.get("lc_medium_count") or 0
+                lc_hard = today_log.get("lc_hard_count") or 0
+                lc_total = lc_easy + lc_med + lc_hard
+                st.metric("LeetCode", lc_total, help=f"E:{lc_easy} M:{lc_med} H:{lc_hard}")
         else:
             st.info("No data logged today yet.")
 
@@ -673,6 +679,17 @@ elif page == "📊 Summary":
                 vocab_df = vocab_df.set_index("date")
                 vocab_df.columns = ["Words"]
                 st.line_chart(vocab_df)
+
+            # LeetCode 进度
+            st.markdown("**LeetCode Trend**")
+            if all(col in df.columns for col in ["lc_easy_count", "lc_medium_count", "lc_hard_count"]):
+                lc_df = df[["date", "lc_easy_count", "lc_medium_count", "lc_hard_count"]].copy()
+                lc_df = lc_df.fillna(0)
+                lc_df = lc_df.set_index("date")
+                lc_df.columns = ["Easy", "Medium", "Hard"]
+                st.bar_chart(lc_df)
+            else:
+                st.caption("No LeetCode data yet.")
         else:
             st.info("No data in the past 3 days.")
 
