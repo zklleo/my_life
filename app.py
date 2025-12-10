@@ -68,7 +68,6 @@ def auto_save():
 
 def save_leetcode_progress():
     """LeetCode 即时保存回调"""
-    # 从 input 组件的 key 同步到 session state
     try:
         st.session_state.lc_easy_count = int(st.session_state.get("lc_easy", 0) or 0)
     except ValueError:
@@ -82,6 +81,22 @@ def save_leetcode_progress():
     except ValueError:
         st.session_state.lc_hard_count = 0
     st.session_state.lc_notes = st.session_state.get("lc_note_input", "")
+    auto_save()
+
+def save_gre_progress():
+    """GRE 即时保存回调"""
+    try:
+        st.session_state.gre_vocab_count = int(st.session_state.get("gre_vocab", 0) or 0)
+    except ValueError:
+        st.session_state.gre_vocab_count = 0
+    try:
+        st.session_state.gre_verbal_count = int(st.session_state.get("gre_verbal", 0) or 0)
+    except ValueError:
+        st.session_state.gre_verbal_count = 0
+    try:
+        st.session_state.gre_reading_count = int(st.session_state.get("gre_reading", 0) or 0)
+    except ValueError:
+        st.session_state.gre_reading_count = 0
     auto_save()
 
 # --- Research Projects ---
@@ -405,50 +420,28 @@ if page == "📝 Daily Log":
     with st.container(border=True):
         st.subheader("📚 GRE Grind")
 
-        st.markdown("**Vocabulary**")
-        col1, col2, col3 = st.columns([1, 2, 1])
+        col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("−10", key="gre_v_m", use_container_width=True):
-                st.session_state.gre_vocab_count = max(0, st.session_state.gre_vocab_count - 10)
-                auto_save()
-                st.rerun()
+            st.text_input(
+                "Vocabulary",
+                value=str(st.session_state.gre_vocab_count),
+                key="gre_vocab",
+                on_change=save_gre_progress
+            )
         with col2:
-            st.markdown(f"<h3 style='text-align:center;margin:0;'>{st.session_state.gre_vocab_count}</h3>", unsafe_allow_html=True)
+            st.text_input(
+                "Verbal Sets",
+                value=str(st.session_state.gre_verbal_count),
+                key="gre_verbal",
+                on_change=save_gre_progress
+            )
         with col3:
-            if st.button("+10", key="gre_v_p", use_container_width=True):
-                st.session_state.gre_vocab_count += 10
-                auto_save()
-                st.rerun()
-
-        st.markdown("**Verbal Sets**")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col1:
-            if st.button("−1", key="gre_vb_m", use_container_width=True):
-                st.session_state.gre_verbal_count = max(0, st.session_state.gre_verbal_count - 1)
-                auto_save()
-                st.rerun()
-        with col2:
-            st.markdown(f"<h3 style='text-align:center;margin:0;'>{st.session_state.gre_verbal_count}</h3>", unsafe_allow_html=True)
-        with col3:
-            if st.button("+1", key="gre_vb_p", use_container_width=True):
-                st.session_state.gre_verbal_count += 1
-                auto_save()
-                st.rerun()
-
-        st.markdown("**Reading Passages**")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col1:
-            if st.button("−1", key="gre_rd_m", use_container_width=True):
-                st.session_state.gre_reading_count = max(0, st.session_state.gre_reading_count - 1)
-                auto_save()
-                st.rerun()
-        with col2:
-            st.markdown(f"<h3 style='text-align:center;margin:0;'>{st.session_state.gre_reading_count}</h3>", unsafe_allow_html=True)
-        with col3:
-            if st.button("+1", key="gre_rd_p", use_container_width=True):
-                st.session_state.gre_reading_count += 1
-                auto_save()
-                st.rerun()
+            st.text_input(
+                "Reading",
+                value=str(st.session_state.gre_reading_count),
+                key="gre_reading",
+                on_change=save_gre_progress
+            )
 
     # ----------------------------------------------------------
     # 模块 D: LeetCode Grind
