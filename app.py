@@ -865,3 +865,94 @@ with tab2:
                 st.caption("No project activity in the past 14 days.")
         except Exception as e:
             st.caption("No project data available.")
+
+    # ----------------------------------------------------------
+    # E. GRE Progress
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 📚 GRE Progress")
+
+        try:
+            all_logs = get_all_logs()
+        except Exception:
+            all_logs = []
+
+        if all_logs and len(all_logs) > 0:
+            df = pd.DataFrame(all_logs)
+            df["date"] = pd.to_datetime(df["date"])
+            df["gre_vocab_count"] = df["gre_vocab_count"].fillna(0)
+            df["gre_verbal_count"] = df["gre_verbal_count"].fillna(0)
+            df["gre_reading_count"] = df["gre_reading_count"].fillna(0)
+
+            # 本周数据
+            today_dt = pd.Timestamp(today)
+            monday = today_dt - timedelta(days=today_dt.weekday())
+            df_week = df[df["date"] >= monday].copy()
+
+            # 上半部分：本周每日数据
+            st.markdown("**This Week (Daily)**")
+
+            if not df_week.empty:
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    vocab_chart = alt.Chart(df_week).mark_line(point=True, color="#4CAF50").encode(
+                        x=alt.X("date:T", title="", axis=alt.Axis(format="%a")),
+                        y=alt.Y("gre_vocab_count:Q", title="Words"),
+                        tooltip=["date:T", "gre_vocab_count:Q"]
+                    ).properties(height=150, title="Vocabulary")
+                    st.altair_chart(vocab_chart, use_container_width=True)
+
+                with col2:
+                    verbal_chart = alt.Chart(df_week).mark_line(point=True, color="#2196F3").encode(
+                        x=alt.X("date:T", title="", axis=alt.Axis(format="%a")),
+                        y=alt.Y("gre_verbal_count:Q", title="Sets"),
+                        tooltip=["date:T", "gre_verbal_count:Q"]
+                    ).properties(height=150, title="Verbal Sets")
+                    st.altair_chart(verbal_chart, use_container_width=True)
+
+                with col3:
+                    reading_chart = alt.Chart(df_week).mark_line(point=True, color="#FF9800").encode(
+                        x=alt.X("date:T", title="", axis=alt.Axis(format="%a")),
+                        y=alt.Y("gre_reading_count:Q", title="Passages"),
+                        tooltip=["date:T", "gre_reading_count:Q"]
+                    ).properties(height=150, title="Reading")
+                    st.altair_chart(reading_chart, use_container_width=True)
+            else:
+                st.caption("No data for this week yet.")
+
+            # 下半部分：历史周数据
+            st.markdown("**All Weeks (Total)**")
+
+            df_weekly = df.set_index("date").resample("W-MON")[
+                ["gre_vocab_count", "gre_verbal_count", "gre_reading_count"]
+            ].sum().reset_index()
+
+            if not df_weekly.empty:
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    vocab_weekly = alt.Chart(df_weekly).mark_bar(color="#4CAF50").encode(
+                        x=alt.X("date:T", title="Week", axis=alt.Axis(format="%m/%d")),
+                        y=alt.Y("gre_vocab_count:Q", title="Words"),
+                        tooltip=["date:T", "gre_vocab_count:Q"]
+                    ).properties(height=150, title="Vocabulary")
+                    st.altair_chart(vocab_weekly, use_container_width=True)
+
+                with col2:
+                    verbal_weekly = alt.Chart(df_weekly).mark_bar(color="#2196F3").encode(
+                        x=alt.X("date:T", title="Week", axis=alt.Axis(format="%m/%d")),
+                        y=alt.Y("gre_verbal_count:Q", title="Sets"),
+                        tooltip=["date:T", "gre_verbal_count:Q"]
+                    ).properties(height=150, title="Verbal Sets")
+                    st.altair_chart(verbal_weekly, use_container_width=True)
+
+                with col3:
+                    reading_weekly = alt.Chart(df_weekly).mark_bar(color="#FF9800").encode(
+                        x=alt.X("date:T", title="Week", axis=alt.Axis(format="%m/%d")),
+                        y=alt.Y("gre_reading_count:Q", title="Passages"),
+                        tooltip=["date:T", "gre_reading_count:Q"]
+                    ).properties(height=150, title="Reading")
+                    st.altair_chart(reading_weekly, use_container_width=True)
+        else:
+            st.info("No GRE data available.")
