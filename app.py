@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 from datetime import date, datetime, timedelta
 import pandas as pd
+import altair as alt
 
 # ============================================================
 # 页面配置
@@ -38,6 +39,11 @@ def get_today_log():
 def get_logs_since(start_date: str):
     """获取从 start_date 开始的所有日志"""
     response = supabase.table("daily_logs").select("*").gte("date", start_date).order("date", desc=True).execute()
+    return response.data or []
+
+def get_all_logs():
+    """获取所有日志"""
+    response = supabase.table("daily_logs").select("*").order("date", desc=False).execute()
     return response.data or []
 
 def save_daily_log(data: dict):
@@ -697,3 +703,81 @@ elif page == "📊 Summary":
                 st.markdown("---")
         else:
             st.caption("No research logs in the past 3 days.")
+
+    # ----------------------------------------------------------
+    # C. Information Diet Trends
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 📉 Information Diet Trends")
+
+        all_logs = get_all_logs()
+
+        if all_logs:
+            # 数据准备
+            df = pd.DataFrame(all_logs)
+            df["date"] = pd.to_datetime(df["date"])
+            df["newsletter_time"] = df["newsletter_time"].fillna(0)
+            df["video_time"] = df["video_time"].fillna(0)
+            df["wechat_time"] = df["wechat_time"].fillna(0)
+
+            # 转换为长格式
+            df_melted = df.melt(
+                id_vars=["date"],
+                value_vars=["newsletter_time", "video_time", "wechat_time"],
+                var_name="Category",
+                value_name="Minutes"
+            )
+            # 重命名类别
+            category_map = {
+                "newsletter_time": "Newsletter",
+                "video_time": "Video",
+                "wechat_time": "WeChat"
+            }
+            df_melted["Category"] = df_melted["Category"].map(category_map)
+
+            # 图表一：每日趋势折线图
+            st.markdown("**Daily Trend**")
+            daily_chart = alt.Chart(df_melted).mark_line(point=True).encode(
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("Minutes:Q", title="Minutes"),
+                color=alt.Color("Category:N", legend=alt.Legend(title="Category")),
+                tooltip=["date:T", "Category:N", "Minutes:Q"]
+            ).properties(
+                height=300
+            ).interactive(bind_x=True)
+
+            st.altair_chart(daily_chart, use_container_width=True)
+
+            # 图表二：周总量堆叠柱状图
+            st.markdown("**Weekly Total**")
+
+            # 按周聚合
+            df_weekly = df.set_index("date").resample("W-MON")[
+                ["newsletter_time", "video_time", "wechat_time"]
+            ].sum().reset_index()
+
+            # 转换为小时
+            df_weekly["Newsletter"] = df_weekly["newsletter_time"] / 60
+            df_weekly["Video"] = df_weekly["video_time"] / 60
+            df_weekly["WeChat"] = df_weekly["wechat_time"] / 60
+
+            # 转换为长格式
+            df_weekly_melted = df_weekly.melt(
+                id_vars=["date"],
+                value_vars=["Newsletter", "Video", "WeChat"],
+                var_name="Category",
+                value_name="Hours"
+            )
+
+            weekly_chart = alt.Chart(df_weekly_melted).mark_bar().encode(
+                x=alt.X("date:T", title="Week"),
+                y=alt.Y("Hours:Q", title="Hours", stack="zero"),
+                color=alt.Color("Category:N", legend=alt.Legend(title="Category")),
+                tooltip=["date:T", "Category:N", alt.Tooltip("Hours:Q", format=".1f")]
+            ).properties(
+                height=300
+            ).interactive(bind_x=True)
+
+            st.altair_chart(weekly_chart, use_container_width=True)
+        else:
+            st.info("No data available for Information Diet trends.")
