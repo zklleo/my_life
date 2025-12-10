@@ -68,6 +68,11 @@ def auto_save():
 
 def save_leetcode_progress():
     """LeetCode 即时保存回调"""
+    # 从 input 组件的 key 同步到 session state
+    st.session_state.lc_easy_count = st.session_state.get("lc_easy", 0)
+    st.session_state.lc_medium_count = st.session_state.get("lc_medium", 0)
+    st.session_state.lc_hard_count = st.session_state.get("lc_hard", 0)
+    st.session_state.lc_notes = st.session_state.get("lc_note_input", "")
     auto_save()
     st.toast("Saved!")
 
@@ -440,7 +445,7 @@ if page == "📝 Daily Log":
     # ----------------------------------------------------------
     # 模块 D: LeetCode Grind
     # ----------------------------------------------------------
-    lc_total = st.session_state.lc_easy_count + st.session_state.lc_medium_count + st.session_state.lc_hard_count
+    lc_total = st.session_state.get("lc_easy", 0) + st.session_state.get("lc_medium", 0) + st.session_state.get("lc_hard", 0)
     with st.container(border=True):
         st.markdown(f"### LeetCode (Total: {lc_total})")
 
@@ -451,7 +456,7 @@ if page == "📝 Daily Log":
                 min_value=0,
                 step=1,
                 value=st.session_state.lc_easy_count,
-                key="lc_easy_count",
+                key="lc_easy",
                 on_change=save_leetcode_progress
             )
         with col2:
@@ -460,7 +465,7 @@ if page == "📝 Daily Log":
                 min_value=0,
                 step=1,
                 value=st.session_state.lc_medium_count,
-                key="lc_medium_count",
+                key="lc_medium",
                 on_change=save_leetcode_progress
             )
         with col3:
@@ -469,7 +474,7 @@ if page == "📝 Daily Log":
                 min_value=0,
                 step=1,
                 value=st.session_state.lc_hard_count,
-                key="lc_hard_count",
+                key="lc_hard",
                 on_change=save_leetcode_progress
             )
 
@@ -477,7 +482,7 @@ if page == "📝 Daily Log":
             st.text_area(
                 "Notes",
                 value=st.session_state.lc_notes,
-                key="lc_notes",
+                key="lc_note_input",
                 placeholder="Today's problem notes...",
                 label_visibility="collapsed",
                 on_change=save_leetcode_progress
