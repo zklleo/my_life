@@ -1034,3 +1034,74 @@ with tab2:
             st.altair_chart(weekly_chart, use_container_width=True)
         else:
             st.info("No LeetCode data available.")
+
+    # ----------------------------------------------------------
+    # G. Idea Activity (Past 14 Days)
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 💡 Idea Activity (Past 14 Days)")
+
+        try:
+            # 获取过去14天的日期范围
+            start_14 = (today - timedelta(days=13)).isoformat()
+            idea_updates_14 = supabase.table("idea_updates").select("*, ideas(title)").gte("created_at", start_14).execute().data or []
+
+            if idea_updates_14:
+                # 构建数据
+                update_data = []
+                for update in idea_updates_14:
+                    idea_title = update.get("ideas", {}).get("title", "Unknown") if update.get("ideas") else "Unknown"
+                    # 从 created_at 提取日期
+                    created_date = update["created_at"][:10]
+                    update_data.append({
+                        "idea": idea_title,
+                        "date": created_date
+                    })
+
+                df_updates = pd.DataFrame(update_data)
+                df_updates["date"] = pd.to_datetime(df_updates["date"])
+                df_updates["value"] = 1
+
+                # 获取所有活跃 ideas
+                active_ideas = get_active_ideas()
+                idea_names = [i["title"] for i in active_ideas]
+
+                # 生成完整的14天日期范围
+                date_range = pd.date_range(end=today, periods=14)
+
+                # 创建完整的 idea x 日期矩阵
+                if idea_names:
+                    all_combinations = pd.MultiIndex.from_product(
+                        [idea_names, date_range],
+                        names=["idea", "date"]
+                    ).to_frame(index=False)
+
+                    # 合并实际数据
+                    df_merged = all_combinations.merge(
+                        df_updates[["idea", "date", "value"]],
+                        on=["idea", "date"],
+                        how="left"
+                    )
+                    df_merged["value"] = df_merged["value"].fillna(0).astype(int)
+
+                    # Altair 热力图
+                    heatmap = alt.Chart(df_merged).mark_rect(cornerRadius=3).encode(
+                        x=alt.X("date:T", title="Date", axis=alt.Axis(format="%m/%d", labelAngle=-45)),
+                        y=alt.Y("idea:N", title="Idea"),
+                        color=alt.Color(
+                            "value:Q",
+                            scale=alt.Scale(domain=[0, 1], range=["#2d2d2d", "#FF9800"]),
+                            legend=None
+                        ),
+                        tooltip=["idea:N", alt.Tooltip("date:T", format="%Y-%m-%d"), "value:Q"]
+                    ).properties(
+                        height=max(100, len(idea_names) * 30)
+                    )
+
+                    st.altair_chart(heatmap, use_container_width=True)
+                else:
+                    st.caption("No active ideas to display.")
+            else:
+                st.caption("No idea updates in the past 14 days.")
+        except Exception as e:
+            st.caption("No idea data available.")
