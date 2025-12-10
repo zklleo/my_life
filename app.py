@@ -956,3 +956,81 @@ with tab2:
                     st.altair_chart(reading_weekly, use_container_width=True)
         else:
             st.info("No GRE data available.")
+
+    # ----------------------------------------------------------
+    # F. LeetCode Progress
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 💻 LeetCode Progress")
+
+        try:
+            all_logs = get_all_logs()
+        except Exception:
+            all_logs = []
+
+        if all_logs and len(all_logs) > 0:
+            df = pd.DataFrame(all_logs)
+            df["date"] = pd.to_datetime(df["date"])
+            df["lc_easy_count"] = df["lc_easy_count"].fillna(0)
+            df["lc_medium_count"] = df["lc_medium_count"].fillna(0)
+            df["lc_hard_count"] = df["lc_hard_count"].fillna(0)
+            df["lc_total"] = df["lc_easy_count"] + df["lc_medium_count"] + df["lc_hard_count"]
+
+            # 本周数据
+            today_dt = pd.Timestamp(today)
+            monday = today_dt - timedelta(days=today_dt.weekday())
+            df_week = df[df["date"] >= monday].copy()
+
+            # 第一张：本周每日总数折线图
+            st.markdown("**This Week (Daily Total)**")
+
+            if not df_week.empty:
+                daily_chart = alt.Chart(df_week).mark_line(point=True, color="#9C27B0", strokeWidth=2).encode(
+                    x=alt.X("date:T", title="Date", axis=alt.Axis(format="%a")),
+                    y=alt.Y("lc_total:Q", title="Problems"),
+                    tooltip=["date:T", "lc_total:Q", "lc_easy_count:Q", "lc_medium_count:Q", "lc_hard_count:Q"]
+                ).properties(height=200)
+
+                st.altair_chart(daily_chart, use_container_width=True)
+            else:
+                st.caption("No data for this week yet.")
+
+            # 第二张：历史周总数堆叠柱状图
+            st.markdown("**All Weeks (By Difficulty)**")
+
+            df_weekly = df.set_index("date").resample("W-MON")[
+                ["lc_easy_count", "lc_medium_count", "lc_hard_count"]
+            ].sum().reset_index()
+
+            # 转换为长格式
+            df_weekly_melted = df_weekly.melt(
+                id_vars=["date"],
+                value_vars=["lc_easy_count", "lc_medium_count", "lc_hard_count"],
+                var_name="Difficulty",
+                value_name="Count"
+            )
+
+            # 重命名
+            difficulty_map = {
+                "lc_easy_count": "Easy",
+                "lc_medium_count": "Medium",
+                "lc_hard_count": "Hard"
+            }
+            df_weekly_melted["Difficulty"] = df_weekly_melted["Difficulty"].map(difficulty_map)
+
+            # 颜色映射
+            lc_color_scale = alt.Scale(
+                domain=["Easy", "Medium", "Hard"],
+                range=["#4CAF50", "#FF9800", "#F44336"]  # 绿、橙、红
+            )
+
+            weekly_chart = alt.Chart(df_weekly_melted).mark_bar().encode(
+                x=alt.X("date:T", title="Week", axis=alt.Axis(format="%m/%d")),
+                y=alt.Y("Count:Q", title="Problems", stack="zero"),
+                color=alt.Color("Difficulty:N", scale=lc_color_scale, legend=alt.Legend(title="Difficulty")),
+                tooltip=["date:T", "Difficulty:N", "Count:Q"]
+            ).properties(height=250).interactive(bind_x=True)
+
+            st.altair_chart(weekly_chart, use_container_width=True)
+        else:
+            st.info("No LeetCode data available.")
