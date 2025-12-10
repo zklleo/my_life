@@ -796,3 +796,72 @@ with tab2:
             st.altair_chart(weekly_chart, use_container_width=True)
         else:
             st.info("No data available for Information Diet trends.")
+
+    # ----------------------------------------------------------
+    # D. 项目贡献热力图 (Past 14 Days)
+    # ----------------------------------------------------------
+    with st.container(border=True):
+        st.markdown("### 📅 Project Activity (Past 14 Days)")
+
+        try:
+            # 获取过去14天的日期范围
+            start_14 = (today - timedelta(days=13)).isoformat()
+            research_logs_14 = supabase.table("research_logs").select("*, research_projects(title)").gte("date", start_14).execute().data or []
+
+            if research_logs_14:
+                # 构建数据
+                log_data = []
+                for log in research_logs_14:
+                    proj_title = log.get("research_projects", {}).get("title", "Unknown") if log.get("research_projects") else "Unknown"
+                    log_data.append({
+                        "project": proj_title,
+                        "date": log["date"]
+                    })
+
+                df_logs = pd.DataFrame(log_data)
+                df_logs["date"] = pd.to_datetime(df_logs["date"])
+                df_logs["value"] = 1
+
+                # 获取所有活跃项目
+                active_projects = get_active_projects()
+                project_names = [p["title"] for p in active_projects]
+
+                # 生成完整的14天日期范围
+                date_range = pd.date_range(end=today, periods=14)
+
+                # 创建完整的项目x日期矩阵
+                all_combinations = pd.MultiIndex.from_product(
+                    [project_names, date_range],
+                    names=["project", "date"]
+                ).to_frame(index=False)
+
+                # 合并实际数据
+                df_merged = all_combinations.merge(
+                    df_logs[["project", "date", "value"]],
+                    on=["project", "date"],
+                    how="left"
+                )
+                df_merged["value"] = df_merged["value"].fillna(0).astype(int)
+
+                if not df_merged.empty and len(project_names) > 0:
+                    # Altair 热力图
+                    heatmap = alt.Chart(df_merged).mark_rect(cornerRadius=3).encode(
+                        x=alt.X("date:T", title="Date", axis=alt.Axis(format="%m/%d", labelAngle=-45)),
+                        y=alt.Y("project:N", title="Project"),
+                        color=alt.Color(
+                            "value:Q",
+                            scale=alt.Scale(domain=[0, 1], range=["#2d2d2d", "#4CAF50"]),
+                            legend=None
+                        ),
+                        tooltip=["project:N", alt.Tooltip("date:T", format="%Y-%m-%d"), "value:Q"]
+                    ).properties(
+                        height=max(100, len(project_names) * 30)
+                    )
+
+                    st.altair_chart(heatmap, use_container_width=True)
+                else:
+                    st.caption("No active projects to display.")
+            else:
+                st.caption("No project activity in the past 14 days.")
+        except Exception as e:
+            st.caption("No project data available.")
